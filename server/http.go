@@ -81,6 +81,17 @@ func (n *Node) startHTTP() {
 
 func (n *Node) makeHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. ADD CORS HEADERS: Tell the browser it is safe to send data here
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Internal-Replication")
+
+		// 2. HANDLE PREFLIGHT: Browsers send an "OPTIONS" request first to check security
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		body, _ := ioutil.ReadAll(r.Body)
 		reply := make(chan commandReply)
 

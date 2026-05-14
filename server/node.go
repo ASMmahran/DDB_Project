@@ -146,8 +146,12 @@ func (n *Node) handleAsFollower(cmd commandMsg) {
 		n.execute(cmd)
 	case cmd.path == "/query/raw":
 		n.execute(cmd)
-	case cmd.path == "/db/create" || cmd.path == "/db/drop":
-		cmd.reply <- commandReply{403, jsonErr("Only the Master node can create or drop databases")}
+	case cmd.path == "/db/create":
+		n.execute(cmd)
+	case cmd.path == "/table/create":
+		n.execute(cmd)
+	case cmd.path == "/db/drop":
+		cmd.reply <- commandReply{403, jsonErr("Only the Master node can drop databases")}
 	case n.leaderID == "":
 		cmd.reply <- commandReply{503, jsonErr("No master elected yet — please retry")}
 	default:
@@ -358,7 +362,7 @@ func (n *Node) forwardToLeader(cmd commandMsg) {
 		cmd.reply <- commandReply{503, jsonErr("Cannot locate master node")}
 		return
 	}
-	
+
 	// Ensure the URL is properly formatted
 	if !strings.HasPrefix(leaderURL, "http") {
 		leaderURL = "http://" + leaderURL
@@ -366,7 +370,7 @@ func (n *Node) forwardToLeader(cmd commandMsg) {
 
 	req, _ := http.NewRequest(cmd.method, leaderURL+cmd.path, bytes.NewBuffer(cmd.body))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	client := http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -380,7 +384,7 @@ func (n *Node) forwardToLeader(cmd commandMsg) {
 }
 
 func (n *Node) leaderURL() string {
-	// If the leader ID is already a full network address (e.g., 192.168.1.10:8080)
+	// If the leader ID is already a full network address (e.g., 192.168.1.15:8080)
 	if strings.Contains(n.leaderID, ":") || strings.HasPrefix(n.leaderID, "http") {
 		return n.leaderID
 	}
@@ -391,7 +395,7 @@ func (n *Node) leaderURL() string {
 			return p
 		}
 	}
-	
+
 	// If we still can't find it, return the raw leader ID as a last resort
 	return n.leaderID
 }
@@ -424,7 +428,7 @@ func (n *Node) CallSpecialWorker(workerType string, data interface{}) (interface
 	}
 
 	body, _ := json.Marshal(map[string]interface{}{"data": data})
-	
+
 	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
