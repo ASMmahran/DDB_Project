@@ -1,4 +1,3 @@
-```markdown
 # DDB — Highly Available Distributed Database in Go
 
 A robust, fault-tolerant distributed database system built in Go. It features **Master/Slave replication**, **Raft-inspired automatic leader election**, a **Smart API Gateway** with auto-failover, and a fully decoupled **Remote Web Client**.
